@@ -186,7 +186,7 @@ function setupRoom(){
 // jaringan antar pemain lewat PeerJS: orang pertama jadi host, yang lain tersambung ke host
 // SERVER PERANTARA (TURN) supaya mabar jalan dari jaringan apa pun.
 // Isi tiga data ini dari dashboard layanan TURN gratis (alamat server, username, password). Kosongkan kalau belum punya.
-const TURN={url:"",user:"",pass:""};
+const TURN={url:"free.expressturn.com:3478",user:"000000002109354090",pass:"ZwgZPIFNUKqaDkhAIBHkTzpZu1Y="};
 const ICE=[{urls:"stun:stun.l.google.com:19302"}];
 if(TURN.url)ICE.push({urls:TURN.url.split(",").map(x=>x.trim()),username:TURN.user,credential:TURN.pass});
 const PCFG={config:{iceServers:ICE}};
