@@ -45,12 +45,19 @@ button:disabled{opacity:.4}
 #lobby>div{max-width:320px;padding:20px}
 #lobby input{width:100%;box-sizing:border-box;padding:12px;margin:10px 0;border-radius:10px;border:1px solid #3b7bb0;background:#0d2236;color:#eaf4ff;font-size:16px}
 #lobby button{margin:4px}#rt{display:block;margin-top:10px;min-height:18px}
+#gn{position:fixed;left:50%;top:38%;transform:translateX(-50%);display:none;padding:12px 18px;background:#7b2ff7;border-color:#d0b0ff;font-weight:700;z-index:6}
+#gp{position:fixed;inset:0;background:#000b;display:none;align-items:center;justify-content:center;z-index:15;text-align:center}
+#gb{font-size:64px;width:140px;height:140px;line-height:140px;margin:0 auto 14px;border-radius:24px;background:#241a4a;border:3px solid #7b2ff7;transition:box-shadow .3s}
+#gb.sh{animation:shk .12s infinite}@keyframes shk{0%{transform:translate(-3px,0) rotate(-3deg)}50%{transform:translate(3px,-2px) rotate(3deg)}100%{transform:translate(-3px,0) rotate(-3deg)}}
+#gt{font-size:18px;font-weight:700;min-height:26px}#gk button{margin:8px 4px}
 </style></head><body>
 <div id="hud"><div class="bar"><i id="hp"></i><b id="hpt"></b></div><div class="bar x"><i id="xp"></i><b id="lvt"></b></div><div id="loc"></div><div id="tg"></div><div id="ol"></div><div id="cn"></div></div>
 <button id="mb">Menu</button><button id="cb">Chat</button><div id="cbar"><input id="ci" maxlength="60" placeholder="Tulis pesan..."><button id="cs">Kirim</button></div><div id="log"></div>
 <div id="jb"><div id="jk"></div></div>
 <button id="ba" class="ab">Serang</button><button id="bs" class="ab">Skill</button><button id="bj" class="ab">Lompat</button><button id="bd" class="ab">Dash</button><button id="f1" class="ab" style="display:none">Beku</button><button id="f2" class="ab" style="display:none">Badai</button>
 <div id="menu" hidden></div><div id="toast"></div>
+<button id="gn">Gacha Buah · 500 koin</button>
+<div id="gp"><div><div id="gb">?</div><div id="gt"></div><div id="gk"></div></div></div>
 <div id="lobby"><div><h2>Pulau Petualang</h2><p>Kode room (samakan dengan temanmu, orang pertama yang masuk jadi host):</p><input id="rc" maxlength="20" placeholder="contoh: kita123"><button id="rj">Masuk room</button><button id="rs">Main sendiri</button><small id="rt"></small></div></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="turn.js"></script>
@@ -63,7 +70,7 @@ const IS=[
 {n:"Gurun Pasir",x:200,z:0,lv:[25,40],req:25,c:0xe3c16f,ec:0xb5894a,t:0xc9a45c,e:["Kalajengking","Mumi"]},
 {n:"Gunung Api",x:300,z:0,lv:[45,70],req:45,c:0x5a3d3d,ec:0xd1452b,t:0x7a2e2e,e:["Golem Lava","Iblis"]}];
 const ST=[["hp","Health","+15 HP maks"],["mel","Pukulan","+3 damage serangan"],["def","Pertahanan","kurangi damage diterima"],["spd","Kecepatan","lari lebih cepat"],["skl","Skill","+8 damage skill"]];
-const P={lv:1,xp:0,pts:0,st:{mel:0,def:0,hp:0,spd:0,skl:0},isl:0,hp:105,coin:0,fruit:"",own:[]};
+const P={lv:1,xp:0,pts:0,st:{mel:0,def:0,hp:0,spd:0,skl:0},isl:0,hp:105,coin:0,fruit:"",inv:[]};
 try{const s=JSON.parse(localStorage.getItem("pp1"));if(s)Object.assign(P,s)}catch(e){}
 const need=l=>Math.round(40+l*l*8),maxHp=()=>100+P.lv*5+P.st.hp*15,dmg=()=>8+P.lv*2+P.st.mel*3,spd=()=>Math.min(14,7+P.st.spd*.12),skd=()=>Math.round(dmg()*2.5+P.st.skl*8);
 const spawn=i=>[IS[i].x,IS[i].z+R-6],M=c=>new THREE.MeshLambertMaterial({color:c});
@@ -110,7 +117,7 @@ function mm(i,k,c){const g=new THREE.Group(),n=new THREE.Group();g.add(n);g.user
 const E=[];
 function place(e){const s=IS[e.i],sp=spawn(e.i);let x,z;
  do{const a=Math.random()*6.28,d=5+Math.random()*(R-10);x=s.x+Math.cos(a)*d;z=s.z+Math.sin(a)*d}while(Math.hypot(x-sp[0],z-sp[1])<22);
- e.home={x,z};e.g.position.set(x,0,z);e.hp=e.max;e.alive=true;e.g.visible=true;e.frz=0;if(e.ice)e.ice.visible=false}
+ e.home={x,z};e.g.position.set(x,0,z);e.hp=e.max;e.alive=true;e.g.visible=true;e.frz=0;e.brn=0;if(e.ice)e.ice.visible=false}
 function mk(i){const s=IS[i],lv=s.lv[0]+Math.floor(Math.random()*(s.lv[1]-s.lv[0]+1));
  const k=Math.floor(Math.random()*2),g=mm(i,k,s.ec),sz=1+lv*.01;
  
@@ -144,7 +151,7 @@ function tp(i){P.isl=i;const p=spawn(i);pl.position.set(p[0],0,p[1]);toast("Tiba
 
 // kontrol
 let jid=null,cid=null,jx=0,jy=0,jo,lx,ly,cy=0,cp=.5;const K={};
-addEventListener("pointerdown",e=>{if(e.target.closest("button,#menu,#cbar"))return;
+addEventListener("pointerdown",e=>{if(e.target.closest("button,#menu,#cbar,#gp"))return;
  if(e.pointerType!="mouse"&&jid===null&&e.clientX<innerWidth*.45&&e.clientY>innerHeight*.4){jid=e.pointerId;jo={x:e.clientX,y:e.clientY};const b=$("jb");b.style.display="block";b.style.left=jo.x+"px";b.style.top=jo.y+"px"}
  else if(cid===null){cid=e.pointerId;lx=e.clientX;ly=e.clientY}});
 addEventListener("pointermove",e=>{
@@ -170,8 +177,7 @@ $("menu").onclick=e=>{const b=e.target.closest("button");if(!b)return;
  else if(b.dataset.s&&P.pts){P.st[b.dataset.s]++;P.pts--;menu()}
  else if(b.dataset.t!==undefined){tp(+b.dataset.t);$("menu").hidden=true}
  else if(b.dataset.b){buy(b.dataset.b);menu()}
- else if(b.dataset.e){P.fruit=P.fruit===b.dataset.e?"":b.dataset.e;menu()}
- else if(b.dataset.g){gacha();menu()}};
+ else if(b.dataset.e){eat(b.dataset.e);menu()}};
 function save(){try{localStorage.setItem("pp1",JSON.stringify(P))}catch(e){}}
 setInterval(save,4000);
 addEventListener("resize",()=>{cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();rd.setSize(innerWidth,innerHeight)});
@@ -238,27 +244,53 @@ $("cs").onclick=sendChat;$("ci").addEventListener("keydown",e=>{if(e.key==="Ente
 
 // toko, gacha, dan fruit (tambah fruit baru = tambah satu objek di FR)
 const GP=500,PJ=[];let fk1=0,fk2=0;
-const FR=[{id:"es",n:"Buah Es",r:"Langka",w:45,price:2500,l:["Beku","Badai"],s:[()=>iceShot(),()=>iceNova()]}];
+const FR=[
+ {id:"es",n:"Buah Es",r:"Langka",w:35,price:2500,icon:"\u{1F9CA}",c:"#9fe8ff",l:["Beku","Badai"],s:[()=>iceShot(),()=>iceNova()]},
+ {id:"magma",n:"Buah Magma",r:"Epik",w:20,price:4500,icon:"\u{1F30B}",c:"#ff7b00",l:["Tinju","Letusan"],s:[()=>magmaShot(),()=>magmaNova()]}];
 function fruitSkill(n){const f=FR.find(x=>x.id===P.fruit);if(f)f.s[n-1]()}
-function iceShot(){if(fk1>0)return;fk1=6;swg=.3;const a=pl.rotation.y,m=new THREE.Mesh(new THREE.ConeGeometry(.5,2,6),new THREE.MeshBasicMaterial({color:0x9fe8ff}));
- m.rotation.order="YXZ";m.rotation.y=a;m.rotation.x=Math.PI/2;m.position.set(pl.position.x,2,pl.position.z);sc.add(m);
- PJ.push({m,x:pl.position.x,z:pl.position.z,dx:Math.sin(a),dz:Math.cos(a),l:1.2,h:new Set()})}
+function spear(){const g=new THREE.Group(),c=new THREE.MeshBasicMaterial({color:0xaeeeff}),s=new THREE.Mesh(new THREE.BoxGeometry(.14,.14,2.4),c),t=new THREE.Mesh(new THREE.ConeGeometry(.28,.9,6),c);t.rotation.x=Math.PI/2;t.position.z=1.65;g.add(s,t);return g}
+function iceShot(){if(fk1>0)return;fk1=6;swg=.3;const a=pl.rotation.y,m=spear();
+ m.rotation.y=a;m.position.set(pl.position.x,2.2,pl.position.z);sc.add(m);
+ PJ.push({m,x:pl.position.x,z:pl.position.z,dx:Math.sin(a),dz:Math.cos(a),l:1.2,h:new Set(),k:.8,c:"#9fe8ff",f:"e"})}
+function magmaShot(){if(fk1>0)return;fk1=6;swg=.3;const a=pl.rotation.y,m=new THREE.Mesh(new THREE.SphereGeometry(.9,10,8),new THREE.MeshBasicMaterial({color:0xff5a1f}));
+ m.position.set(pl.position.x,2.2,pl.position.z);sc.add(m);
+ PJ.push({m,x:pl.position.x,z:pl.position.z,dx:Math.sin(a),dz:Math.cos(a),l:1.1,h:new Set(),k:1.1,c:"#ff7b00",f:"m"})}
+function magmaNova(){if(fk2>0)return;fk2=14;swg=.3;
+ const r=new THREE.Mesh(new THREE.RingGeometry(.8,1.2,32),new THREE.MeshBasicMaterial({color:0xff7b00,side:THREE.DoubleSide,transparent:true}));
+ r.rotation.x=-Math.PI/2;r.position.set(pl.position.x,.2,pl.position.z);sc.add(r);fx.push({r,l:.5});
+ for(const e of E)if(e.alive&&Math.hypot(e.g.position.x-pl.position.x,e.g.position.z-pl.position.z)<11){hurt(e,skd()*1.2,"#ff7b00");if(e.alive){e.brn=4;e.bt=.5}}}
 function iceNova(){if(fk2>0)return;fk2=14;swg=.3;
  const r=new THREE.Mesh(new THREE.RingGeometry(.8,1.2,32),new THREE.MeshBasicMaterial({color:0x9fe8ff,side:THREE.DoubleSide,transparent:true}));
  r.rotation.x=-Math.PI/2;r.position.set(pl.position.x,.2,pl.position.z);sc.add(r);fx.push({r,l:.5});
  for(const e of E)if(e.alive&&Math.hypot(e.g.position.x-pl.position.x,e.g.position.z-pl.position.z)<10){hurt(e,skd()*.9,"#9fe8ff");if(e.alive)e.frz=4}}
-function buy(id){const f=FR.find(x=>x.id===id);if(!f||P.own.includes(id)||P.coin<f.price)return;P.coin-=f.price;P.own.push(id);P.fruit=id;toast("Kamu membeli "+f.n+"!")}
-function gacha(){if(P.coin<GP)return;P.coin-=GP;
- const pool=[{z:1,w:55}].concat(FR.map(f=>({f,w:f.w}))),tot=pool.reduce((a,b)=>a+b.w,0);let r=Math.random()*tot,h=pool[0];
+function buy(id){const f=FR.find(x=>x.id===id);if(!f||P.coin<f.price)return;P.coin-=f.price;P.inv.push(id);toast(f.n+" masuk inventori")}
+function eat(id){const i=P.inv.indexOf(id);if(i<0)return;P.inv.splice(i,1);if(P.fruit)P.inv.push(P.fruit);P.fruit=id;fk1=fk2=0;toast("Kamu memakan "+FR.find(x=>x.id===id).n+"!")}
+function shop(){const n=v=>v.toLocaleString("id-ID"),cur=FR.find(f=>f.id===P.fruit);
+ return `<h3>Inventori Buah</h3><div class="row"><span>${cur?"Dimakan: "+cur.n:"Belum memakan buah apa pun"}<small>${cur?"kekuatan aktif (buah lama kembali ke inventori kalau makan yang baru)":"makan buah dari inventori untuk dapat skill"}</small></span></div>`
+  +(P.inv.length?P.inv.map(id=>{const f=FR.find(x=>x.id===id);return `<button class="tp" data-e="${id}">${f.n}<small>${f.r} · tap untuk memakan</small></button>`}).join(""):`<div class="row"><span><small>Inventori kosong. Beli di toko atau gacha di NPC.</small></span></div>`)
+  +`<h3>Toko · Koin: ${n(P.coin)}</h3>`+FR.map(f=>`<button class="tp" data-b="${f.id}" ${P.coin<f.price?"disabled":""}>${f.n}<small>${f.r} · ${n(f.price)} koin</small></button>`).join("")}
+// gacha lewat NPC dengan animasi
+function openGacha(){const g=$("gp");if(g.style.display==="flex")return;if(P.coin<GP){toast("Koin kurang, butuh "+GP);return}
+ P.coin-=GP;
+ const pool=[{z:1,w:45}].concat(FR.map(f=>({f,w:f.w}))),tot=pool.reduce((a,b)=>a+b.w,0);let r=Math.random()*tot,h=pool[0];
  for(const o of pool){if(r<o.w){h=o;break}r-=o.w}
- if(h.z){const b=Math.round(GP*.3);P.coin+=b;toast("Zonk! Koin kembali "+b)}
- else if(P.own.includes(h.f.id)){const b=Math.round(GP*.5);P.coin+=b;toast(h.f.n+" dobel, ditukar "+b+" koin")}
- else{P.own.push(h.f.id);P.fruit=h.f.id;toast("GACHA! Kamu dapat "+h.f.n+"!")}}
-function shop(){const n=v=>v.toLocaleString("id-ID");
- return `<h3>Toko dan Gacha · Koin: ${n(P.coin)}</h3>`+FR.map(f=>P.own.includes(f.id)
-  ?`<button class="tp" data-e="${f.id}">${f.n}<small>${P.fruit===f.id?"Sedang dipakai (tap untuk lepas)":"Dimiliki · tap untuk pakai"}</small></button>`
-  :`<button class="tp" data-b="${f.id}" ${P.coin<f.price?"disabled":""}>${f.n}<small>${f.r} · ${n(f.price)} koin</small></button>`).join("")
-  +`<button class="tp" data-g="1" ${P.coin<GP?"disabled":""}>Gacha Buah<small>${GP} koin · bisa dapat buah atau zonk</small></button>`}
+ const b=$("gb"),t=$("gt"),k=$("gk");g.style.display="flex";k.innerHTML="";b.className="sh";b.style.boxShadow="none";b.style.borderColor="#7b2ff7";t.textContent="Memutar...";
+ const ic=["\u{1F34E}","\u{1F347}","\u{1F34D}","\u{1F352}","\u{1F34A}","\u{1F96D}"];let i=0;const iv=setInterval(()=>{b.textContent=ic[i++%ic.length]},90);
+ setTimeout(()=>{clearInterval(iv);b.className="";
+  if(h.z){const rf=Math.round(GP*.3);P.coin+=rf;b.textContent="\u{1F4A8}";t.textContent="Zonk! Koin kembali "+rf;k.innerHTML='<button id="gx">Tutup</button>'}
+  else{const f=h.f;P.inv.push(f.id);b.textContent=f.icon;b.style.boxShadow="0 0 50px "+f.c;b.style.borderColor=f.c;t.textContent=f.r+": "+f.n+"!";
+   k.innerHTML='<button id="ge">Makan sekarang</button><button id="gx">Simpan</button>';$("ge").onclick=()=>{eat(f.id);g.style.display="none"}}
+  $("gx").onclick=()=>{g.style.display="none"}},2600)}
+$("gn").onclick=openGacha;
+// NPC gacha di zona aman tiap pulau
+const NPC=[];
+IS.forEach((s,i)=>{const sp=spawn(i),g=new THREE.Group();
+ const b=bx(1.1,1.6,.7,0x6a2fbf);b.position.y=1.5;const h=bx(.8,.8,.8,0xf1c27d);h.position.y=2.7;const hat=bx(1,.3,1,0x241a4a);hat.position.y=3.25;
+ const o=new THREE.Mesh(new THREE.SphereGeometry(.45,12,10),new THREE.MeshBasicMaterial({color:0xffd166}));o.position.y=4.3;
+ g.add(b,h,hat,o);g.position.set(sp[0]+5,0,sp[1]-3);g.rotation.y=-.6;sc.add(g);NPC.push({x:sp[0]+5,z:sp[1]-3,o})});
+// tampilan di tangan pemain: tombak es dan tangan magma
+const spH=spear();spH.scale.setScalar(.55);spH.position.set(0,-1.1,.5);spH.visible=false;aL.add(spH);
+const mgH=[aL,aR].map(a=>{const m=new THREE.Mesh(new THREE.BoxGeometry(.6,.6,.6),new THREE.MeshBasicMaterial({color:0xff5a1f}));m.position.y=-1.15;m.visible=false;a.add(m);return m});
 // mekanik baru: lompat, dash, zona aman
 let vy=0,dk=0,dT=0;const dh=new Set();
 function safe(){for(let i=0;i<IS.length;i++){const s=spawn(i);if(Math.hypot(pl.position.x-s[0],pl.position.z-s[1])<9)return true}return false}
@@ -280,6 +312,7 @@ function loop(now){requestAnimationFrame(loop);const dt=Math.min(.05,(now-last)/
  for(const e of E){
   if(!e.alive){e.rt-=dt;if(e.rt<=0){e.hp=e.max;place(e)}continue}
   const px=pl.position.x-e.g.position.x,pz=pl.position.z-e.g.position.z,d=Math.hypot(px,pz),hx=e.home.x-e.g.position.x,hz=e.home.z-e.g.position.z,hd2=Math.hypot(hx,hz);
+  if(e.brn>0){e.brn-=dt;e.bt-=dt;if(e.bt<=0){e.bt=.5;hurt(e,skd()*.06,"#ff7b00");if(!e.alive)continue}}
   if(e.frz>0){e.frz-=dt;e.ice.visible=e.frz>0;e.at=0;continue}e.cd-=dt;const nn=e.g.userData.n;
   if(e.at>0){e.at-=dt;const q=1-Math.max(0,e.at)/.5,u=Math.sin(Math.max(0,q-.6)/.4*Math.PI);nn.rotation.x=q<.6?-.5*q/.6:.7*u;nn.position.z=q<.6?0:.9*u;
    if(!e.dh&&e.at<.12){e.dh=true;if(!sf&&dT<=0&&pl.position.y<1&&d<2.8){const x=Math.max(1,Math.round(e.dmg*(.9+Math.random()*.2)/(1+P.st.def*.04)));P.hp-=x;pop("-"+x,hv(pl,4),"#ef476f");if(P.hp<=0)die()}}}
@@ -296,7 +329,7 @@ function loop(now){requestAnimationFrame(loop);const dt=Math.min(.05,(now-last)/
   const v=new THREE.Vector3(r.g.position.x,4.2,r.g.position.z).project(cam),vis=v.z<1&&Math.abs(v.x)<1.1&&Math.abs(v.y)<1.1;r.nm.style.display=vis?"block":"none";
   if(vis){r.nm.style.left=(v.x*.5+.5)*innerWidth+"px";r.nm.style.top=(-v.y*.5+.5)*innerHeight+"px";r.nm.textContent=(r.say&&Date.now()-r.sat<6000?r.say+" | ":"")+r.t}}
  for(let i=PJ.length-1;i>=0;i--){const q=PJ[i];q.l-=dt;q.x+=q.dx*26*dt;q.z+=q.dz*26*dt;q.m.position.x=q.x;q.m.position.z=q.z;
-  for(const e of E)if(e.alive&&!q.h.has(e)&&Math.hypot(e.g.position.x-q.x,e.g.position.z-q.z)<2){q.h.add(e);hurt(e,skd()*.8,"#9fe8ff");if(e.alive)e.frz=3}
+  for(const e of E)if(e.alive&&!q.h.has(e)&&Math.hypot(e.g.position.x-q.x,e.g.position.z-q.z)<2){q.h.add(e);hurt(e,skd()*q.k,q.c);if(e.alive){if(q.f==="e")e.frz=3;else{e.brn=4;e.bt=.5}}}
   if(q.l<=0){sc.remove(q.m);PJ.splice(i,1)}}
  // HUD
  $("hp").style.width=Math.max(0,P.hp/maxHp()*100)+"%";$("hpt").textContent=Math.ceil(P.hp)+" / "+maxHp();
@@ -305,8 +338,11 @@ function loop(now){requestAnimationFrame(loop);const dt=Math.min(.05,(now-last)/
  const n=near(14);$("tg").textContent=n?n.name+" Lv "+n.lv+" · "+Math.max(0,Math.ceil(n.hp))+" HP":"";
  $("bs").textContent=sk>0?Math.ceil(sk):"Skill";$("bd").textContent=dk>0?Math.ceil(dk):"Dash";
  $("cn").textContent="Koin: "+P.coin.toLocaleString("id-ID");
+ spH.visible=P.fruit==="es";mgH.forEach(m=>{m.visible=P.fruit==="magma";m.scale.setScalar(1+Math.sin(t*8)*.12)});
+ let np=null;for(const q of NPC){q.o.position.y=4.3+Math.sin(t*2)*.25;if(Math.hypot(pl.position.x-q.x,pl.position.z-q.z)<5)np=q}
+ $("gn").style.display=np&&$("gp").style.display!=="flex"&&$("menu").hidden?"block":"none";
  const fr=FR.find(x=>x.id===P.fruit);$("f1").style.display=$("f2").style.display=fr?"block":"none";
- if(fr){$("f1").textContent=fk1>0?Math.ceil(fk1):fr.l[0];$("f2").textContent=fk2>0?Math.ceil(fk2):fr.l[1]}$("mb").textContent=P.pts?"Menu (+"+P.pts+")":"Menu";
+ if(fr){$("f1").textContent=fk1>0?Math.ceil(fk1):fr.l[0];$("f2").textContent=fk2>0?Math.ceil(fk2):fr.l[1];$("f1").style.background=$("f2").style.background=fr.c+"cc"}$("mb").textContent=P.pts?"Menu (+"+P.pts+")":"Menu";
  rd.render(sc,cam)}
 requestAnimationFrame(loop);
 </script></body></html>
